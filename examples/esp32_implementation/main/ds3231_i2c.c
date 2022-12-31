@@ -152,7 +152,7 @@ int16_t ds3231_i2c_set_clock_format(ds3231_clock_format_t setting)
     return err;
 }
 
-int16_t ds3231_i2c_start_device()
+int16_t ds3231_i2c_osc_en(uint8_t status)
 {
     uint8_t reg = REG_CONTROL;
     uint8_t data_read;
@@ -163,7 +163,7 @@ int16_t ds3231_i2c_start_device()
         return err;
 
     data_write[0] = reg;
-    data_write[1] = data_read & ~(1 << 7);
+    data_write[1] = status ? (data_read & ~(1 << 7)) : (data_read | (1 << 7));
 
     err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data_write, 2);
 
@@ -184,15 +184,41 @@ int16_t ds3231_i2c_read_clock(ds3231_rtcc_cfg_t cfg, ds3231_rtcc_clock_t *dt)
 
     if(cfg.clock_format == FORMAT_24HR)
     {
-        if(data[2] & ~(1 << 5))
-            dt->hr = 20;    
-        dt->hr += bcd_to_dec(data[2] & 0x1F);
+        dt->hr = bcd_to_dec(data[2] & 0x3F);
     }
     else
     {
         dt->am_pm = (data[2] & ~(1 << 5));
         dt->hr = bcd_to_dec(data[2] & 0x1F);
     }
+
+    return err;
+}
+
+int16_t ds3231_i2c_set_clock(ds3231_rtcc_cfg_t cfg, ds3231_rtcc_clock_t dt)
+{
+    uint8_t reg = REG_HOURS;
+    uint8_t data[4] = {0};
+    uint8_t hour_reg;
+
+    if((cfg.clock_format == FORMAT_24HR && dt.hr > 23) || 
+       (cfg.clock_format == FORMAT_12HR && dt.hr > 12) || 
+       dt.min > 59 ||
+       dt.sec > 59
+       )
+        return DS3231_ERR;
+
+    int16_t err = ds3231_i2c_hal_read(I2C_ADDRESS_DS3231, &reg, &hour_reg, 1);
+    if(err != DS3231_OK) 
+        return err;
+
+    data[0] = REG_SECONDS;
+    data[1] = dec_to_bcd(dt.sec);
+    data[2] = dec_to_bcd(dt.min);
+    data[3] = (cfg.clock_format == FORMAT_24HR) ? (hour_reg & 0xC0) | dec_to_bcd(dt.hr) : (hour_reg & 0xE0) | dec_to_bcd(dt.hr);
+    data[3] = (cfg.clock_format == FORMAT_24HR) ? data[3] : ((data[3] & ~(1 << 5)) | (dt.am_pm << 5));
+
+    err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data, 4);
 
     return err;
 }
@@ -211,6 +237,21 @@ int16_t ds3231_i2c_read_calendar(ds3231_rtcc_calendar_t *dt)
     dt->mon = bcd_to_dec(data[2] & 0x7F);
     dt->year = bcd_to_dec(data[3]);
     dt->century = data[2] >> 7;
+
+    return err;
+}
+
+int16_t ds3231_i2c_set_calendar(ds3231_rtcc_calendar_t dt)
+{
+    uint8_t reg = REG_DATE;
+    uint8_t data[4] = {0};
+
+    data[0] = reg;
+    data[1] = dec_to_bcd(dt.date);
+    data[2] = dec_to_bcd(dt.mon & 0x7F);
+    data[3] = dec_to_bcd(dt.year);
+
+    int16_t err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data, 4);
 
     return err;
 }
@@ -248,9 +289,6 @@ int16_t ds3231_i2c_dev_config(ds3231_rtcc_cfg_t cfg)
     if(err != DS3231_OK) 
         return err;
     ds3231_i2c_hal_ms_delay(50);
-
-    /* Start device */
-    ds3231_i2c_start_device();
 
     return err;
 }

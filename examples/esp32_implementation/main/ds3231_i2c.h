@@ -89,6 +89,11 @@ typedef enum{
 } ds3231_clock_format_t;
 
 typedef enum{
+    CLOCK_PERIOD_AM = 0x00,
+    CLOCK_PERIOD_PM = 0x01,
+} ds3231_clock_ampm_t;
+
+typedef enum{
     ALARM1_SEC = 0x0F,
     ALARM1_SEC_MATCH = 0x0E,
     ALARM1_MIN_SEC_MATCH = 0x0C,
@@ -116,7 +121,7 @@ typedef struct{
     uint8_t hr;
     uint8_t sec;  
     uint8_t min; 
-    uint8_t am_pm; 
+    ds3231_clock_ampm_t am_pm; 
 } ds3231_rtcc_clock_t;
 
 typedef struct{
@@ -162,9 +167,9 @@ int16_t ds3231_i2c_set_alarm2(ds3231_alarm2_t setting);
 int16_t ds3231_i2c_set_clock_format(ds3231_clock_format_t setting);
 
 /**
- * @brief Start RTCC by enablig oscillator
+ * @brief Start/Stop oscillator
  */
-int16_t ds3231_i2c_start_device();
+int16_t ds3231_i2c_osc_en(uint8_t status);
 
 /**
  * @brief Read clock data
@@ -172,9 +177,19 @@ int16_t ds3231_i2c_start_device();
 int16_t ds3231_i2c_read_clock(ds3231_rtcc_cfg_t cfg, ds3231_rtcc_clock_t *dt);
 
 /**
+ * @brief Set clock data
+ */
+int16_t ds3231_i2c_set_clock(ds3231_rtcc_cfg_t cfg, ds3231_rtcc_clock_t dt);
+
+/**
  * @brief Read calendar data
  */
 int16_t ds3231_i2c_read_calendar(ds3231_rtcc_calendar_t *dt);
+
+/**
+ * @brief Set calendar data
+ */
+int16_t ds3231_i2c_set_calendar(ds3231_rtcc_calendar_t dt);
 
 /**
  * @brief Device config

@@ -13,7 +13,7 @@ static const char *TAG = "example_usage";
 
 void app_main(void)
 {
-    esp_err_t err = DS3231_OK;
+    esp_err_t err;
 
     ds3231_i2c_hal_init();
 
@@ -26,7 +26,47 @@ void app_main(void)
         .clock_format = FORMAT_24HR
     };
 
-    ds3231_i2c_dev_config(cfg);
+    err = ds3231_i2c_dev_config(cfg);
+    if (err == DS3231_OK)
+    {
+        ESP_LOGI(TAG, "Device config successful");
+    }
+    else{
+        ESP_LOGE(TAG, "Device config failed");
+    }
+
+    ds3231_rtcc_clock_t clock_set = {
+        .hr = 19,
+        .sec = 5,
+        .min = 30,
+        .am_pm = CLOCK_PERIOD_AM
+    };
+
+    err += ds3231_i2c_set_clock(cfg, clock_set);
+
+    if (err == DS3231_OK)
+    {
+        ESP_LOGI(TAG, "Time setting successful");
+    }
+    else{
+        ESP_LOGE(TAG, "Time setting failed");
+    }
+
+    ds3231_rtcc_calendar_t calendar_set = {
+        .mon = 12,
+        .date = 31,
+        .year = 22
+    };
+
+    err += ds3231_i2c_set_calendar(calendar_set);
+
+    if (err == DS3231_OK)
+    {
+        ESP_LOGI(TAG, "Calendar setting successful");
+    }
+    else{
+        ESP_LOGE(TAG, "Calendar setting failed");
+    }
 
     if (err == DS3231_OK)
     {
@@ -39,7 +79,7 @@ void app_main(void)
             ds3231_i2c_read_calendar(&calendar_data);
             ds3231_i2c_read_clock(cfg, &clock_data);
             ESP_LOGI(TAG, "Time: %02d:%02d:%02d", clock_data.hr, clock_data.min, clock_data.sec);
-            ESP_LOGI(TAG, "Date: %02d/%02d/%02d", calendar_data.mon, calendar_data.day, calendar_data.year);
+            ESP_LOGI(TAG, "Date: %02d/%02d/%02d", calendar_data.mon, calendar_data.date, calendar_data.year);
             ds3231_i2c_hal_ms_delay(1000);
         }
     }
