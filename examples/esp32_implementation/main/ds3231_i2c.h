@@ -128,7 +128,7 @@ typedef struct{
     uint8_t mon;
     uint8_t day;  
     uint8_t date;
-    uint8_t year; 
+    uint16_t year; 
     uint8_t century; 
 } ds3231_rtcc_calendar_t;
 

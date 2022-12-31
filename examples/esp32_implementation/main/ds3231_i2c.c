@@ -235,7 +235,7 @@ int16_t ds3231_i2c_read_calendar(ds3231_rtcc_calendar_t *dt)
     dt->day = bcd_to_dec(data[0]);
     dt->date = bcd_to_dec(data[1]);
     dt->mon = bcd_to_dec(data[2] & 0x7F);
-    dt->year = bcd_to_dec(data[3]);
+    dt->year = 2000 + (uint16_t) bcd_to_dec(data[3]);
     dt->century = data[2] >> 7;
 
     return err;
@@ -249,7 +249,7 @@ int16_t ds3231_i2c_set_calendar(ds3231_rtcc_calendar_t dt)
     data[0] = reg;
     data[1] = dec_to_bcd(dt.date);
     data[2] = dec_to_bcd(dt.mon & 0x7F);
-    data[3] = dec_to_bcd(dt.year);
+    data[3] = dec_to_bcd((uint16_t)(dt.year - 2000));
 
     int16_t err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data, 4);
 

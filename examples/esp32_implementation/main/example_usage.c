@@ -55,7 +55,7 @@ void app_main(void)
     ds3231_rtcc_calendar_t calendar_set = {
         .mon = 12,
         .date = 31,
-        .year = 22
+        .year = 2022
     };
 
     err += ds3231_i2c_set_calendar(calendar_set);
