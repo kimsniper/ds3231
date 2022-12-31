@@ -13,14 +13,13 @@ static const char *TAG = "example_usage";
 
 void app_main(void)
 {
-    esp_err_t err;
+    esp_err_t err = DS3231_OK;
 
     ds3231_i2c_hal_init();
 
     if (err == DS3231_OK)
     {
         ESP_LOGI(TAG, "DS3231 initialization successful");
-        ds3231_data_t data;
         while(1)
         {
             //Reading here

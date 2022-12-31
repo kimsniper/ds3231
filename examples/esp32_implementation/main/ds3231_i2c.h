@@ -116,6 +116,7 @@ typedef struct{
     uint8_t hr;
     uint8_t sec;  
     uint8_t min; 
+    uint8_t am_pm; 
 } ds3231_rtcc_clock_t;
 
 typedef struct{
@@ -131,7 +132,7 @@ typedef struct{
     uint8_t alarm1_en;
     uint8_t alarm2_en;
     ds3231_ratesel_t rate_select;
-} ds3231_rtcc_config_t;
+} ds3231_rtcc_t;
 
 /**
  * @brief Read status flag in control register status
@@ -156,12 +157,12 @@ int16_t ds3231_i2c_set_alarm2(ds3231_alarm2_t setting);
 /**
  * @brief Set clock format
  */
-int16_t ds3231_i2c_set_clock_format(ds3231_clock_format_t setting)
+int16_t ds3231_i2c_set_clock_format(ds3231_clock_format_t setting);
 
 /**
  * @brief Device config
  */
-int16_t ds3231_i2c_dev_config(ds3231_rtcc_config_t cfg);
+int16_t ds3231_i2c_dev_config(ds3231_rtcc_t cfg);
 
 #ifdef __cplusplus
 }

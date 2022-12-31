@@ -34,14 +34,14 @@
 
 #include "stdio.h"
 
-static void bcd_to_dec(uint8_t val)
+static uint8_t bcd_to_dec(uint8_t val)
 {
-
+    return ((val >> 4) * 10) + (val & 0x0F);
 }
 
-static void dec_to_bcd(uint8_t val)
+static uint8_t dec_to_bcd(uint8_t val)
 {
-
+    return (((val-(val%10))/10) << 4) | (val%10);
 }
 
 int16_t ds3231_i2c_read_control_status(uint8_t flag)
@@ -126,10 +126,10 @@ int16_t ds3231_i2c_rate_select(ds3231_ratesel_t setting)
     if(err != DS3231_OK) 
         return err;
 
-    data[0] = reg;
-    data[1] = (setting & ~(1 << 1)) ? data[1] | (1 << 7) : data[1] & ~(1 << 7);
+    data_write[0] = reg;
+    data_write[1] = (setting & ~(1 << 1)) ? data_read | (1 << 7) : data_read & ~(1 << 7);
 
-    err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data, 3);
+    err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data_write, 2);
 
     return err;
 }
@@ -139,24 +139,50 @@ int16_t ds3231_i2c_set_clock_format(ds3231_clock_format_t setting)
     uint8_t reg = REG_HOURS;
     uint8_t data_read;
     uint8_t data_write[2];
-    uint8_t reg_ctrl;
 
-    int16_t err = ds3231_i2c_hal_read(I2C_ADDRESS_DS3231, &reg, data_read, 1);
+    int16_t err = ds3231_i2c_hal_read(I2C_ADDRESS_DS3231, &reg, &data_read, 1);
     if(err != DS3231_OK) 
         return err;
 
     data_write[0] = reg;
-    data_write[1] = setting ? data_read[0] | (1 << 6) : data_read[0] & ~(1 << 6);
+    data_write[1] = setting ? data_read | (1 << 6) : data_read & ~(1 << 6);
 
     err = ds3231_i2c_hal_write(I2C_ADDRESS_DS3231, data_write, 2);
 
     return err;
 }
 
-int16_t ds3231_i2c_dev_config(ds3231_rtcc_config_t cfg)
+int16_t ds3231_i2c_read_clock(ds3231_rtcc_t dev, ds3231_rtcc_clock_t *dt)
+{
+    uint8_t reg = REG_SECONDS;
+    uint8_t data[3] = {0};
+
+    int16_t err = ds3231_i2c_hal_read(I2C_ADDRESS_DS3231, &reg, data, 1);
+    if(err != DS3231_OK) 
+        return err;
+
+    dt->sec = bcd_to_dec(data[0]);
+    dt->min = bcd_to_dec(data[1]);
+
+    if(dev.clock_format == FORMAT_24HR)
+    {
+        if(data[2] & ~(1 << 5))
+            dt->hr = 20;    
+        dt->hr += bcd_to_dec(data[2] & 0x1F);
+    }
+    else
+    {
+        dt->am_pm = (data[2] & ~(1 << 5)) ? 0 : 1;
+        dt->hr = bcd_to_dec(data[2] & 0x1F);
+    }
+
+    return err;
+}
+
+int16_t ds3231_i2c_dev_config(ds3231_rtcc_t dev)
 {
     /* Set clock format */
-    int16_t err = ds3231_i2c_set_clock_format(cfg.clock_format);
+    int16_t err = ds3231_i2c_set_clock_format(dev.clock_format);
     
     if(err != DS3231_OK) 
         return err;
@@ -164,28 +190,25 @@ int16_t ds3231_i2c_dev_config(ds3231_rtcc_config_t cfg)
     ds3231_i2c_hal_ms_delay(50);
 
     /* Set alarm 1 */
-    if(cfg.alarm1_en == TRUE)
+    if(dev.alarm1_en == TRUE)
     {
-        err = ds3231_i2c_set_alarm1(cfg.alarm1_set);
+        err = ds3231_i2c_set_alarm1(dev.alarm1_set);
         if(err != DS3231_OK) 
             return err;
+        ds3231_i2c_hal_ms_delay(50);
     }
-
-    ds3231_i2c_hal_ms_delay(50);
 
     /* Set alarm 2 */
-    if(cfg.alarm2_en == TRUE)
+    if(dev.alarm2_en == TRUE)
     {
-        err = ds3231_i2c_set_alarm2(cfg.alarm2_set);
+        err = ds3231_i2c_set_alarm2(dev.alarm2_set);
         if(err != DS3231_OK) 
             return err;
+        ds3231_i2c_hal_ms_delay(50);
     }
 
-    ds3231_i2c_hal_ms_delay(50);
-
     /* Set rate */
-    err = ds3231_i2c_rate_select(cfg.rate_select);
-    if(err != DS3231_OK) 
-        return err;
+    err = ds3231_i2c_rate_select(dev.rate_select);
+
     return err;
 }
