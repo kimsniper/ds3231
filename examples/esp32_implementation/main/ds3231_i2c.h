@@ -122,7 +122,9 @@ typedef struct{
 typedef struct{
     uint8_t mon;
     uint8_t day;  
+    uint8_t date;
     uint8_t year; 
+    uint8_t century; 
 } ds3231_rtcc_calendar_t;
 
 typedef struct{
@@ -132,7 +134,7 @@ typedef struct{
     uint8_t alarm1_en;
     uint8_t alarm2_en;
     ds3231_ratesel_t rate_select;
-} ds3231_rtcc_t;
+} ds3231_rtcc_cfg_t;
 
 /**
  * @brief Read status flag in control register status
@@ -160,9 +162,24 @@ int16_t ds3231_i2c_set_alarm2(ds3231_alarm2_t setting);
 int16_t ds3231_i2c_set_clock_format(ds3231_clock_format_t setting);
 
 /**
+ * @brief Start RTCC by enablig oscillator
+ */
+int16_t ds3231_i2c_start_device();
+
+/**
+ * @brief Read clock data
+ */
+int16_t ds3231_i2c_read_clock(ds3231_rtcc_cfg_t cfg, ds3231_rtcc_clock_t *dt);
+
+/**
+ * @brief Read calendar data
+ */
+int16_t ds3231_i2c_read_calendar(ds3231_rtcc_calendar_t *dt);
+
+/**
  * @brief Device config
  */
-int16_t ds3231_i2c_dev_config(ds3231_rtcc_t cfg);
+int16_t ds3231_i2c_dev_config(ds3231_rtcc_cfg_t cfg);
 
 #ifdef __cplusplus
 }
